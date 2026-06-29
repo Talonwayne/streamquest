@@ -34,7 +34,7 @@ git push -u origin main
    - Output: Next.js default
 4. **Do not deploy yet** — add environment variables first (step 3).
 
-After the first deploy, note your production URL (e.g. `https://streamquest.vercel.app`).
+After the first deploy, note your production URL (e.g. `https://streamquest-green.vercel.app`).
 
 ---
 
@@ -49,7 +49,7 @@ Add these for **Production** (and Preview if you want preview deploys to work):
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase → Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase → Settings → API → `anon` / publishable key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase → Settings → API → `service_role` (secret) |
-| `NEXT_PUBLIC_APP_URL` | Yes | Your Vercel URL, e.g. `https://streamquest.vercel.app` (no trailing slash) |
+| `NEXT_PUBLIC_APP_URL` | Yes | Your Vercel URL, e.g. `https://streamquest-green.vercel.app` (no trailing slash) |
 
 **Optional — email notifications (Resend):**
 
@@ -85,9 +85,9 @@ Redeploy after changing env vars: **Deployments → … → Redeploy**.
 
 In [Supabase Dashboard](https://supabase.com/dashboard/project/cvserjeckynlshuntzpk/auth/url-configuration):
 
-1. **Site URL** → your Vercel production URL (e.g. `https://streamquest.vercel.app`).
+1. **Site URL** → your Vercel production URL (e.g. `https://streamquest-green.vercel.app`).
 2. **Redirect URLs** — add:
-   - `https://streamquest.vercel.app/auth/callback`
+   - `https://streamquest-green.vercel.app/auth/callback`
    - `https://*.vercel.app/auth/callback` (optional, for preview deploys)
 
 Also confirm **Authentication → Providers → Email** is enabled.
