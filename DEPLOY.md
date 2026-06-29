@@ -136,6 +136,32 @@ npm run db:migrate
 
 ---
 
+## Optional: Vercel plugin for Cursor
+
+Install once (user-level, not a project dependency):
+
+```bash
+npx plugins add vercel/vercel-plugin --yes
+```
+
+Or in Cursor chat: `/add-plugin vercel`
+
+**What it does:** Gives the AI agent Vercel/Next.js skills, deploy guidance, and slash commands. It does **not** replace signing into Vercel or importing the GitHub repo — you still do steps 2–4 above first.
+
+**Useful commands after Vercel CLI login (`npx vercel login`):**
+
+| Command | Purpose |
+|---------|---------|
+| `/vercel-plugin:bootstrap` | Link project, sync env from `.env.example` |
+| `/vercel-plugin:deploy` | Preview deploy via `vercel` CLI |
+| `/vercel-plugin:deploy prod` | Production deploy (asks for confirmation) |
+| `/vercel-plugin:env` | List/pull/push env vars on Vercel |
+| `/vercel-plugin:status` | Project and deployment overview |
+
+Restart Cursor after install so the plugin loads.
+
+---
+
 ## What you don't need
 
 - **No `vercel.json`** — Next.js 16 App Router deploys as-is on Vercel.
