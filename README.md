@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Streamquest
 
-## Getting Started
+Request-driven stream discovery. Viewers post and upvote stream ideas; streamers claim requests and go live; everyone who cared gets notified with a link to Twitch, YouTube, Kick, or wherever.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router)
+- **Supabase** (Postgres, Auth, RLS)
+- **Resend** (transactional email)
+- **Web Push** (browser notifications)
+
+## Local development
+
+### 1. Clone and install
+
+```bash
+npm install
+```
+
+### 2. Supabase setup
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run the migration in `supabase/migrations/001_initial_schema.sql` via the SQL Editor
+3. Copy `.env.example` to `.env.local` and fill in your keys:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (for notification fan-out) |
+| `RESEND_API_KEY` | Optional — email notifications |
+| `RESEND_FROM_EMAIL` | Sender address for Resend |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Optional — web push |
+| `VAPID_PRIVATE_KEY` | Web push private key |
+| `VAPID_SUBJECT` | e.g. `mailto:you@example.com` |
+| `NEXT_PUBLIC_APP_URL` | e.g. `http://localhost:3000` |
+
+Generate VAPID keys:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+### 3. Run dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Core flows
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Viewer** — Sign up → post a request → upvote others → get email/push when someone goes live
+2. **Streamer** — Set role to Streamer on profile → browse dashboard → claim request → paste stream URL → notify all upvoters
 
-## Learn More
+## Deploy
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push to GitHub and import in [Vercel](https://vercel.com)
+2. Add all env vars from `.env.example`
+3. Set `NEXT_PUBLIC_APP_URL` to your production URL
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Supabase
 
-## Deploy on Vercel
+- Run migrations on production Supabase project
+- Enable email auth in Authentication → Providers
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  requests/          # Request feed, detail, create
+  streamers/         # Dashboard, public profiles
+  auth/              # Login, callback, signout
+  api/               # REST endpoints
+components/          # UI and feature components
+lib/                 # Supabase clients, auth, notifications
+supabase/migrations/ # Database schema + RLS
+types/               # TypeScript types
+```
+
+## PR roadmap (implemented)
+
+1. Foundation — Next.js + Supabase scaffold
+2. Auth and profiles
+3. Request forum and upvotes
+4. Streamer dashboard and claims
+5. Go live and notifications
+6. Landing page and polish
+
+## License
+
+Private — all rights reserved.
