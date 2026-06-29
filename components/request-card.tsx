@@ -38,10 +38,12 @@ export function RequestCard({ request, userUpvoted = false }: RequestCardProps) 
       <CardContent className="flex items-center justify-between gap-4">
         <p className="line-clamp-2 text-sm text-zinc-400">{request.description}</p>
         <UpvoteButton
+          key={`${request.id}-${request.upvote_count}-${userUpvoted}`}
           requestId={request.id}
           initialCount={request.upvote_count}
           initialUpvoted={userUpvoted}
           disabled={request.status === "fulfilled"}
+          disabledReason={request.status === "fulfilled" ? "Already fulfilled" : undefined}
         />
       </CardContent>
     </Card>

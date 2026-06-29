@@ -60,18 +60,18 @@ Open [http://localhost:3000](http://localhost:3000).
 1. **Viewer** — Sign up → post a request → upvote others → get email/push when someone goes live
 2. **Streamer** — Set role to Streamer on profile → browse dashboard → claim request → paste stream URL → notify all upvoters
 
-## Deploy
+## Deploy (production)
 
-### Vercel
+**Basic prod (~15 min):** Vercel + your existing Supabase project. Full step-by-step guide: **[DEPLOY.md](./DEPLOY.md)**.
 
-1. Push to GitHub and import in [Vercel](https://vercel.com)
-2. Add all env vars from `.env.example`
-3. Set `NEXT_PUBLIC_APP_URL` to your production URL
+Quick outline:
 
-### Supabase
+1. Push to [github.com/Talonwayne/streamquest](https://github.com/Talonwayne/streamquest)
+2. Import repo in [Vercel](https://vercel.com) and set env vars (`NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`)
+3. Add your Vercel URL to Supabase **Site URL** and **Redirect URLs** (`/auth/callback`)
+4. Migrations apply via linked Supabase ↔ GitHub (or `npm run db:migrate`)
 
-- Run migrations on production Supabase project
-- Enable email auth in Authentication → Providers
+Optional: Resend (email) and VAPID keys (push) — see DEPLOY.md.
 
 ## Project structure
 

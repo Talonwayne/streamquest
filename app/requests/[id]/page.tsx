@@ -100,10 +100,12 @@ export default async function RequestDetailPage({
             </p>
           </div>
           <UpvoteButton
+            key={`${request.id}-${request.upvote_count}-${userUpvoted}`}
             requestId={request.id}
             initialCount={request.upvote_count}
             initialUpvoted={userUpvoted}
             disabled={request.status === "fulfilled"}
+            disabledReason={request.status === "fulfilled" ? "Already fulfilled" : undefined}
           />
         </div>
 

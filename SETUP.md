@@ -57,6 +57,6 @@ npm run dev
 npm run test:features
 ```
 
-## 6. Deploy (optional)
+## 6. Deploy to production
 
-Connect the GitHub repo to [Vercel](https://vercel.com) and add the same env vars from `.env.local`.
+See **[DEPLOY.md](./DEPLOY.md)** for the full Vercel + Supabase production guide (env vars, auth redirect URLs, migrations, optional Resend/VAPID).

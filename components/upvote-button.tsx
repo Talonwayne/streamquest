@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowBigUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface UpvoteButtonProps {
   initialCount: number;
   initialUpvoted: boolean;
   disabled?: boolean;
+  disabledReason?: string;
 }
 
 export function UpvoteButton({
@@ -18,43 +20,77 @@ export function UpvoteButton({
   initialCount,
   initialUpvoted,
   disabled,
+  disabledReason,
 }: UpvoteButtonProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [count, setCount] = useState(initialCount);
   const [upvoted, setUpvoted] = useState(initialUpvoted);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function toggleUpvote() {
     if (disabled || loading) return;
-    setLoading(true);
+    setError(null);
 
-    const method = upvoted ? "DELETE" : "POST";
-    const res = await fetch("/api/upvotes", {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestId }),
-    });
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (res.status === 401) {
-      router.push("/auth/login");
-      setLoading(false);
+    if (!user) {
+      const next = encodeURIComponent(pathname);
+      router.push(`/auth/login?next=${next}`);
       return;
     }
 
-    if (res.ok) {
-      setUpvoted(!upvoted);
-      setCount((c) => (upvoted ? c - 1 : c + 1));
+    setLoading(true);
 
-      if (!upvoted && "Notification" in window && Notification.permission === "default") {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          await registerPushSubscription();
+    try {
+      if (upvoted) {
+        const { error: deleteError } = await supabase
+          .from("upvotes")
+          .delete()
+          .eq("request_id", requestId)
+          .eq("user_id", user.id);
+
+        if (deleteError) {
+          setError(deleteError.message);
+          return;
+        }
+
+        setUpvoted(false);
+        setCount((c) => Math.max(0, c - 1));
+      } else {
+        const { error: insertError } = await supabase.from("upvotes").insert({
+          request_id: requestId,
+          user_id: user.id,
+        });
+
+        if (insertError) {
+          if (insertError.code === "23505") {
+            setUpvoted(true);
+          } else {
+            setError(insertError.message);
+            return;
+          }
+        } else {
+          setUpvoted(true);
+          setCount((c) => c + 1);
+
+          if ("Notification" in window && Notification.permission === "default") {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+              await registerPushSubscription();
+            }
+          }
         }
       }
-      router.refresh();
-    }
 
-    setLoading(false);
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function registerPushSubscription() {
@@ -75,28 +111,43 @@ export function UpvoteButton({
       await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           endpoint: json.endpoint,
           p256dh: json.keys?.p256dh,
           auth: json.keys?.auth,
         }),
       });
-    } catch (error) {
-      console.error("Push subscription failed:", error);
+    } catch (pushError) {
+      console.error("Push subscription failed:", pushError);
     }
   }
 
   return (
-    <Button
-      variant={upvoted ? "default" : "outline"}
-      size="sm"
-      onClick={toggleUpvote}
-      disabled={disabled || loading}
-      className={cn("gap-1.5", upvoted && "bg-violet-600")}
-    >
-      <ArrowBigUp className={cn("h-4 w-4", upvoted && "fill-current")} />
-      {count}
-    </Button>
+    <div className="flex shrink-0 flex-col items-end gap-1">
+      <Button
+        variant={upvoted ? "default" : "outline"}
+        size="sm"
+        onClick={toggleUpvote}
+        disabled={disabled || loading}
+        title={disabled ? disabledReason : upvoted ? "Remove upvote" : "Upvote to get notified"}
+        aria-label={
+          disabled
+            ? disabledReason
+            : upvoted
+              ? `Remove upvote (${count})`
+              : `Upvote (${count})`
+        }
+        className={cn("gap-1.5", upvoted && "bg-violet-600")}
+      >
+        <ArrowBigUp className={cn("h-4 w-4", upvoted && "fill-current")} />
+        {count}
+      </Button>
+      {disabled && disabledReason && (
+        <span className="text-xs text-zinc-500">{disabledReason}</span>
+      )}
+      {error && <span className="max-w-[140px] text-right text-xs text-red-400">{error}</span>}
+    </div>
   );
 }
 
