@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { UpvoteButton } from "@/components/upvote-button";
 import { ClaimButton } from "@/components/claim-button";
 import { GoLiveForm } from "@/components/go-live-form";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, unwrapRelation } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
 const statusVariant = {
@@ -31,13 +31,16 @@ export default async function RequestDetailPage({
     .select(
       `
       *,
-      profiles(display_name, avatar_url),
+      profiles!requests_author_id_fkey(display_name, avatar_url),
       claims(
         id,
         streamer_id,
         claimed_at,
-        profiles(display_name, avatar_url),
-        streamer_profiles(bio, platform_links),
+        profiles!claims_streamer_id_fkey(
+          display_name,
+          avatar_url,
+          streamer_profiles(bio, platform_links)
+        ),
         live_sessions(id, stream_url, platform, started_at)
       )
     `
@@ -68,8 +71,8 @@ export default async function RequestDetailPage({
     isStreamer = profile?.role === "streamer" || profile?.role === "both";
   }
 
-  const claim = request.claims?.[0] ?? null;
-  const liveSession = claim?.live_sessions?.[0] ?? null;
+  const claim = unwrapRelation(request.claims);
+  const liveSession = unwrapRelation(claim?.live_sessions);
   const isClaimOwner = user && claim?.streamer_id === user.id;
 
   return (

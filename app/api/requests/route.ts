@@ -5,7 +5,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("requests")
-    .select("*, profiles(display_name, avatar_url)")
+    .select("*, profiles!requests_author_id_fkey(display_name, avatar_url)")
     .order("created_at", { ascending: false });
 
   if (error) {

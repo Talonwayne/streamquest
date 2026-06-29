@@ -52,8 +52,8 @@ function fail(name, err) {
 }
 
 const ts = Date.now();
-const viewerEmail = `viewer-${ts}@streamquest.test`;
-const streamerEmail = `streamer-${ts}@streamquest.test`;
+const viewerEmail = `viewer.${ts}@gmail.com`;
+const streamerEmail = `streamer.${ts}@gmail.com`;
 const password = "testpass123";
 
 // 1. Schema check

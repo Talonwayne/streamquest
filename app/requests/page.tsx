@@ -14,7 +14,7 @@ export default async function RequestsPage() {
 
   const { data: requests } = await supabase
     .from("requests")
-    .select("*, profiles(display_name, avatar_url)")
+    .select("*, profiles!requests_author_id_fkey(display_name, avatar_url)")
     .order("created_at", { ascending: false });
 
   let userUpvotes = new Set<string>();

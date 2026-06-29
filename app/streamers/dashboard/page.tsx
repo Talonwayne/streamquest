@@ -12,7 +12,7 @@ export default async function StreamerDashboardPage() {
 
   const { data: openRequests } = await supabase
     .from("requests")
-    .select("*, profiles(display_name, avatar_url)")
+    .select("*, profiles!requests_author_id_fkey(display_name, avatar_url)")
     .eq("status", "open")
     .order("upvote_count", { ascending: false });
 
