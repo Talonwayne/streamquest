@@ -32,6 +32,9 @@ export async function SiteHeader() {
           <Link href="/requests" className="hover:text-white transition-colors">
             Requests
           </Link>
+          <Link href="/trending" className="hover:text-white transition-colors">
+            Trending
+          </Link>
           <Link
             href="/streamers/dashboard"
             className="hover:text-white transition-colors"

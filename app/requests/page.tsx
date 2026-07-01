@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { RequestCard } from "@/components/request-card";
 import { buttonVariants } from "@/components/ui/button";
-import { trendingScore, cn } from "@/lib/utils";
+import { computeClientTrendingScore, cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import type { RequestWithAuthor } from "@/types/database";
 
@@ -26,11 +26,11 @@ export default async function RequestsPage() {
     userUpvotes = new Set(upvotes?.map((u) => u.request_id) ?? []);
   }
 
-  const sorted = [...(requests ?? [])].sort(
-    (a, b) =>
-      trendingScore(b.upvote_count, b.created_at) -
-      trendingScore(a.upvote_count, a.created_at)
-  ) as RequestWithAuthor[];
+  const sorted = [...(requests ?? [])].sort((a, b) => {
+    const scoreA = a.trending_score ?? computeClientTrendingScore(a.upvote_count, a.created_at);
+    const scoreB = b.trending_score ?? computeClientTrendingScore(b.upvote_count, b.created_at);
+    return scoreB - scoreA;
+  }) as RequestWithAuthor[];
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
