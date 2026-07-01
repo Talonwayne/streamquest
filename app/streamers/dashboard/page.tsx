@@ -3,9 +3,8 @@ import { requireStreamer } from "@/lib/auth";
 import { RequestCard } from "@/components/request-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoLiveForm } from "@/components/go-live-form";
-import { formatRelativeTime, trendingScore, unwrapRelation } from "@/lib/utils";
-import type { RequestWithAuthor } from "@/types/database";
+import { formatRelativeTime, formatRequestStatus, trendingScore, unwrapRelation } from "@/lib/utils";
+import type { RequestStatus, RequestWithAuthor } from "@/types/database";
 
 export default async function StreamerDashboardPage() {
   const { supabase, user } = await requireStreamer();
@@ -13,7 +12,7 @@ export default async function StreamerDashboardPage() {
   const { data: openRequests } = await supabase
     .from("requests")
     .select("*, profiles!requests_author_id_fkey(display_name, avatar_url)")
-    .eq("status", "open")
+    .in("status", ["open", "live_now"])
     .order("upvote_count", { ascending: false });
 
   const sortedOpen = [...(openRequests ?? [])].sort(
@@ -22,38 +21,48 @@ export default async function StreamerDashboardPage() {
       trendingScore(a.upvote_count, a.created_at)
   ) as RequestWithAuthor[];
 
-  const { data: myClaims } = await supabase
-    .from("claims")
+  const { data: mySessions } = await supabase
+    .from("live_sessions")
     .select(
       `
       id,
-      claimed_at,
-      requests(id, title, status, upvote_count),
-      live_sessions(id, stream_url, platform, started_at)
+      request_id,
+      stream_url,
+      platform,
+      started_at,
+      ended_at,
+      requests(id, title, status, upvote_count)
     `
     )
     .eq("streamer_id", user.id)
-    .order("claimed_at", { ascending: false });
+    .order("started_at", { ascending: false });
+
+  const activeSessions = (mySessions ?? []).filter((s) => !s.ended_at);
+
+  const statusVariant = {
+    open: "default" as const,
+    live_now: "warning" as const,
+    completed: "success" as const,
+  };
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">Streamer dashboard</h1>
         <p className="mt-1 text-zinc-400">
-          Browse what viewers want to watch. Claim a request, go live, and grow your audience.
+          Browse what viewers want to watch. Go live on requests and grow your audience.
         </p>
       </div>
 
-      {myClaims && myClaims.length > 0 && (
+      {activeSessions.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-4 text-xl font-semibold text-white">Your claims</h2>
+          <h2 className="mb-4 text-xl font-semibold text-white">Your live sessions</h2>
           <div className="space-y-4">
-            {myClaims.map((claim) => {
-              const req = unwrapRelation(claim.requests);
-              const live = claim.live_sessions?.[0] ?? null;
+            {activeSessions.map((session) => {
+              const req = unwrapRelation(session.requests);
 
               return (
-                <Card key={claim.id}>
+                <Card key={session.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">
@@ -64,39 +73,24 @@ export default async function StreamerDashboardPage() {
                           {req?.title}
                         </Link>
                       </CardTitle>
-                      <Badge
-                        variant={
-                          req?.status === "fulfilled"
-                            ? "success"
-                            : req?.status === "claimed"
-                              ? "warning"
-                              : "default"
-                        }
-                      >
-                        {req?.status}
+                      <Badge variant={statusVariant[(req?.status ?? "open") as RequestStatus]}>
+                        {formatRequestStatus((req?.status ?? "open") as RequestStatus)}
                       </Badge>
                     </div>
                     <p className="text-xs text-zinc-500">
-                      Claimed {formatRelativeTime(claim.claimed_at)} · {req?.upvote_count} upvotes
+                      Live since {formatRelativeTime(session.started_at)} · {req?.upvote_count} upvotes
                     </p>
                   </CardHeader>
-                  {req?.status === "claimed" && !live && (
-                    <CardContent>
-                      <GoLiveForm claimId={claim.id} requestTitle={req.title} />
-                    </CardContent>
-                  )}
-                  {live && (
-                    <CardContent>
-                      <a
-                        href={live.stream_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-violet-400 hover:underline"
-                      >
-                        View live session →
-                      </a>
-                    </CardContent>
-                  )}
+                  <CardContent>
+                    <a
+                      href={session.stream_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-violet-400 hover:underline"
+                    >
+                      View live session →
+                    </a>
+                  </CardContent>
                 </Card>
               );
             })}

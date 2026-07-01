@@ -4,15 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UpvoteButton } from "@/components/upvote-button";
-import { ClaimButton } from "@/components/claim-button";
 import { GoLiveForm } from "@/components/go-live-form";
-import { formatRelativeTime, unwrapRelation } from "@/lib/utils";
+import { formatRelativeTime, formatRequestStatus } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
+import type { LiveSessionWithStreamer, RequestStatus } from "@/types/database";
 
 const statusVariant = {
   open: "default" as const,
-  claimed: "warning" as const,
-  fulfilled: "success" as const,
+  live_now: "warning" as const,
+  completed: "success" as const,
 };
 
 export default async function RequestDetailPage({
@@ -32,16 +32,18 @@ export default async function RequestDetailPage({
       `
       *,
       profiles!requests_author_id_fkey(display_name, avatar_url),
-      claims(
+      live_sessions(
         id,
         streamer_id,
-        claimed_at,
-        profiles!claims_streamer_id_fkey(
+        stream_url,
+        platform,
+        started_at,
+        ended_at,
+        profiles!live_sessions_streamer_id_fkey(
           display_name,
           avatar_url,
           streamer_profiles(bio, platform_links)
-        ),
-        live_sessions(id, stream_url, platform, started_at)
+        )
       )
     `
     )
@@ -71,9 +73,18 @@ export default async function RequestDetailPage({
     isStreamer = profile?.role === "streamer" || profile?.role === "both";
   }
 
-  const claim = unwrapRelation(request.claims);
-  const liveSession = unwrapRelation(claim?.live_sessions);
-  const isClaimOwner = user && claim?.streamer_id === user.id;
+  const liveSessions = ((request.live_sessions ?? []) as LiveSessionWithStreamer[]).sort(
+    (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+  );
+  const activeSessions = liveSessions.filter((s) => !s.ended_at);
+  const userActiveSession = user
+    ? activeSessions.find((s) => s.streamer_id === user.id)
+    : null;
+  const canGoLive =
+    isStreamer &&
+    user &&
+    (request.status === "open" || request.status === "live_now") &&
+    !userActiveSession;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -87,8 +98,8 @@ export default async function RequestDetailPage({
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <Badge variant={statusVariant[request.status as keyof typeof statusVariant]}>
-                {request.status}
+              <Badge variant={statusVariant[request.status as RequestStatus]}>
+                {formatRequestStatus(request.status as RequestStatus)}
               </Badge>
               <span className="text-sm text-zinc-500">
                 {formatRelativeTime(request.created_at)}
@@ -104,60 +115,87 @@ export default async function RequestDetailPage({
             requestId={request.id}
             initialCount={request.upvote_count}
             initialUpvoted={userUpvoted}
-            disabled={request.status === "fulfilled"}
-            disabledReason={request.status === "fulfilled" ? "Already fulfilled" : undefined}
+            disabled={request.status === "completed"}
+            disabledReason={request.status === "completed" ? "Request completed" : undefined}
           />
         </div>
 
         <p className="text-zinc-300 leading-relaxed">{request.description}</p>
 
-        {request.status === "open" && isStreamer && (
+        {canGoLive && (
           <div className="rounded-xl border border-violet-800/30 bg-violet-950/20 p-6">
-            <h2 className="mb-2 font-semibold text-violet-200">Streamer?</h2>
+            <h2 className="mb-2 font-semibold text-violet-200">Ready to stream?</h2>
             <p className="mb-4 text-sm text-zinc-400">
-              Claim this request and go live when you are ready. All upvoters get notified.
+              Go live on this request. All upvoters get notified — multiple streamers can fulfill the same request.
             </p>
-            <ClaimButton requestId={request.id} />
+            <GoLiveForm requestId={request.id} requestTitle={request.title} />
           </div>
         )}
 
-        {claim && (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <h2 className="font-semibold text-white">Claimed by</h2>
-            <Link
-              href={`/streamers/${claim.streamer_id}`}
-              className="mt-1 text-violet-400 hover:underline"
-            >
-              {claim.profiles?.display_name ?? "Streamer"}
-            </Link>
-            <p className="mt-1 text-sm text-zinc-500">
-              Claimed {formatRelativeTime(claim.claimed_at)}
-            </p>
+        {activeSessions.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="font-semibold text-emerald-300">
+              Live now ({activeSessions.length})
+            </h2>
+            {activeSessions.map((session) => (
+              <div
+                key={session.id}
+                className="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-6"
+              >
+                <Link
+                  href={`/streamers/${session.streamer_id}`}
+                  className="font-medium text-violet-400 hover:underline"
+                >
+                  {session.profiles?.display_name ?? "Streamer"}
+                </Link>
+                <p className="mt-1 text-sm text-zinc-400">
+                  Started {formatRelativeTime(session.started_at)} on {session.platform}
+                </p>
+                <a
+                  href={session.stream_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex"
+                >
+                  <Button className="gap-2">
+                    Watch stream
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </a>
+              </div>
+            ))}
           </div>
         )}
 
-        {isClaimOwner && request.status === "claimed" && !liveSession && (
-          <GoLiveForm claimId={claim!.id} requestTitle={request.title} />
-        )}
-
-        {liveSession && (
-          <div className="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-6">
-            <h2 className="font-semibold text-emerald-300">Live session</h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              Started {formatRelativeTime(liveSession.started_at)} on{" "}
-              {liveSession.platform}
-            </p>
-            <a
-              href={liveSession.stream_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex"
-            >
-              <Button className="gap-2">
-                Watch stream
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </a>
+        {liveSessions.filter((s) => s.ended_at).length > 0 && (
+          <div className="space-y-3">
+            <h2 className="font-semibold text-zinc-400">Past sessions</h2>
+            {liveSessions
+              .filter((s) => s.ended_at)
+              .map((session) => (
+                <div
+                  key={session.id}
+                  className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4"
+                >
+                  <Link
+                    href={`/streamers/${session.streamer_id}`}
+                    className="text-sm text-violet-400 hover:underline"
+                  >
+                    {session.profiles?.display_name ?? "Streamer"}
+                  </Link>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {formatRelativeTime(session.started_at)} · {session.platform}
+                  </p>
+                  <a
+                    href={session.stream_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-sm text-zinc-400 hover:text-violet-300"
+                  >
+                    View stream link →
+                  </a>
+                </div>
+              ))}
           </div>
         )}
       </div>

@@ -2,13 +2,13 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpvoteButton } from "@/components/upvote-button";
-import { formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime, formatRequestStatus } from "@/lib/utils";
 import type { RequestWithAuthor } from "@/types/database";
 
 const statusVariant = {
   open: "default" as const,
-  claimed: "warning" as const,
-  fulfilled: "success" as const,
+  live_now: "warning" as const,
+  completed: "success" as const,
 };
 
 interface RequestCardProps {
@@ -32,7 +32,9 @@ export function RequestCard({ request, userUpvoted = false }: RequestCardProps) 
               {formatRelativeTime(request.created_at)}
             </p>
           </div>
-          <Badge variant={statusVariant[request.status]}>{request.status}</Badge>
+          <Badge variant={statusVariant[request.status]}>
+            {formatRequestStatus(request.status)}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="flex items-center justify-between gap-4">
@@ -42,8 +44,8 @@ export function RequestCard({ request, userUpvoted = false }: RequestCardProps) 
           requestId={request.id}
           initialCount={request.upvote_count}
           initialUpvoted={userUpvoted}
-          disabled={request.status === "fulfilled"}
-          disabledReason={request.status === "fulfilled" ? "Already fulfilled" : undefined}
+          disabled={request.status === "completed"}
+          disabledReason={request.status === "completed" ? "Request completed" : undefined}
         />
       </CardContent>
     </Card>

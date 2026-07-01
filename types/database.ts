@@ -1,6 +1,6 @@
 export type UserRole = "viewer" | "streamer" | "both";
 
-export type RequestStatus = "open" | "claimed" | "fulfilled";
+export type RequestStatus = "open" | "live_now" | "completed";
 
 export type StreamPlatform = "twitch" | "youtube" | "kick" | "other";
 
@@ -36,6 +36,8 @@ export interface Request {
   description: string;
   status: RequestStatus;
   upvote_count: number;
+  trending_score?: number;
+  active_streamer_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +48,7 @@ export interface Upvote {
   created_at: string;
 }
 
+/** @deprecated Claims table is deprecated; use live_sessions with request_id directly */
 export interface Claim {
   id: string;
   request_id: string;
@@ -55,7 +58,8 @@ export interface Claim {
 
 export interface LiveSession {
   id: string;
-  claim_id: string;
+  request_id: string;
+  streamer_id: string;
   stream_url: string;
   platform: StreamPlatform;
   started_at: string;
@@ -84,10 +88,13 @@ export interface RequestWithAuthor extends Request {
   profiles: Pick<Profile, "display_name" | "avatar_url"> | null;
 }
 
+export interface TrendingRequest extends RequestWithAuthor {}
+
+export interface LiveSessionWithStreamer extends LiveSession {
+  profiles: Pick<Profile, "display_name" | "avatar_url"> | null;
+  streamer_profiles?: Pick<StreamerProfile, "bio" | "platform_links"> | null;
+}
+
 export interface RequestWithDetails extends RequestWithAuthor {
-  claims: (Claim & {
-    profiles: Pick<Profile, "display_name" | "avatar_url"> | null;
-    streamer_profiles: Pick<StreamerProfile, "bio" | "platform_links"> | null;
-  })[] | null;
-  live_sessions: (LiveSession & { claims: Claim | null })[] | null;
+  live_sessions: LiveSessionWithStreamer[] | null;
 }

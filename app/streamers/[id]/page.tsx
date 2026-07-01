@@ -36,18 +36,21 @@ export default async function StreamerProfilePage({
     kick?: string;
   };
 
-  const { data: fulfilledClaims } = await supabase
-    .from("claims")
+  const { data: completedSessions } = await supabase
+    .from("live_sessions")
     .select(
       `
       id,
-      claimed_at,
-      requests(title, upvote_count),
-      live_sessions(stream_url, platform, started_at)
+      started_at,
+      ended_at,
+      stream_url,
+      platform,
+      requests(title, upvote_count)
     `
     )
     .eq("streamer_id", id)
-    .order("claimed_at", { ascending: false })
+    .not("ended_at", "is", null)
+    .order("started_at", { ascending: false })
     .limit(10);
 
   const links = [
@@ -91,17 +94,16 @@ export default async function StreamerProfilePage({
       )}
 
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">Fulfilled requests</h2>
-        {!fulfilledClaims?.length ? (
-          <p className="text-zinc-500">No fulfilled requests yet.</p>
+        <h2 className="mb-4 text-lg font-semibold text-white">Completed streams</h2>
+        {!completedSessions?.length ? (
+          <p className="text-zinc-500">No completed streams yet.</p>
         ) : (
           <div className="space-y-3">
-            {fulfilledClaims.map((claim) => {
-              const req = unwrapRelation(claim.requests);
-              const live = claim.live_sessions?.[0];
+            {completedSessions.map((session) => {
+              const req = unwrapRelation(session.requests);
 
               return (
-                <Card key={claim.id}>
+                <Card key={session.id}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{req?.title}</CardTitle>
                   </CardHeader>
@@ -109,16 +111,14 @@ export default async function StreamerProfilePage({
                     <span className="text-sm text-zinc-500">
                       {req?.upvote_count} upvotes
                     </span>
-                    {live && (
-                      <a
-                        href={live.stream_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-violet-400 hover:underline"
-                      >
-                        Watch replay →
-                      </a>
-                    )}
+                    <a
+                      href={session.stream_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-violet-400 hover:underline"
+                    >
+                      Watch replay →
+                    </a>
                   </CardContent>
                 </Card>
               );

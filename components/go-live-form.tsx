@@ -16,11 +16,11 @@ import {
 import type { StreamPlatform } from "@/types/database";
 
 interface GoLiveFormProps {
-  claimId: string;
+  requestId: string;
   requestTitle: string;
 }
 
-export function GoLiveForm({ claimId, requestTitle }: GoLiveFormProps) {
+export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
   const router = useRouter();
   const [streamUrl, setStreamUrl] = useState("");
   const [platform, setPlatform] = useState<StreamPlatform>("twitch");
@@ -36,7 +36,7 @@ export function GoLiveForm({ claimId, requestTitle }: GoLiveFormProps) {
     const res = await fetch("/api/go-live", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ claimId, streamUrl, platform }),
+      body: JSON.stringify({ requestId, streamUrl, platform }),
     });
 
     if (!res.ok) {

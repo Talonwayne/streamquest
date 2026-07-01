@@ -131,22 +131,7 @@ let requestId;
   else pass("Profile: set streamer role");
 }
 
-// 6. Streamer claims request
-let claimId;
-if (requestId) {
-  const { data, error } = await streamerClient
-    .from("claims")
-    .insert({ request_id: requestId, streamer_id: streamerId })
-    .select()
-    .single();
-  if (error) fail("Claims: claim request", error.message);
-  else {
-    claimId = data.id;
-    pass("Claims: claim request");
-  }
-}
-
-// 7. Viewer upvotes
+// 6. Viewer upvotes
 if (requestId) {
   const { error } = await supabase
     .from("upvotes")
@@ -155,58 +140,36 @@ if (requestId) {
   else pass("Upvotes: add");
 }
 
-// 8. Verify request status = claimed
+// 7. Verify request status = open
 if (requestId) {
   const { data, error } = await supabase
     .from("requests")
     .select("status, upvote_count")
     .eq("id", requestId)
     .single();
-  if (error) fail("Requests: status after claim", error.message);
-  else if (data.status !== "claimed") fail("Requests: status after claim", `expected claimed, got ${data.status}`);
+  if (error) fail("Requests: status after create", error.message);
+  else if (data.status !== "open") fail("Requests: status after create", `expected open, got ${data.status}`);
   else if (data.upvote_count < 1) fail("Upvotes: count sync", `expected >=1, got ${data.upvote_count}`);
-  else pass("Requests: status claimed + upvote count synced");
+  else pass("Requests: status open + upvote count synced");
 }
 
-// 9. Go live via API
-if (claimId) {
-  const { data: session } = await streamerClient.auth.getSession();
-  const token = session.session?.access_token;
-  if (!token) {
-    fail("Go live: API", "No streamer session token");
-  } else {
-    const res = await fetch(`${APP_URL}/api/go-live`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: `sb-${new URL(url).hostname.split(".")[0]}-auth-token=${encodeURIComponent(JSON.stringify(session.session))}`,
-      },
-      body: JSON.stringify({
-        claimId,
-        streamUrl: "https://twitch.tv/teststream",
-        platform: "twitch",
-      }),
-    });
-    // Cookie auth may not work cross-script; try direct DB insert for live session
-    if (!res.ok) {
-      const { data, error } = await streamerClient
-        .from("live_sessions")
-        .insert({
-          claim_id: claimId,
-          stream_url: "https://twitch.tv/teststream",
-          platform: "twitch",
-        })
-        .select()
-        .single();
-      if (error) fail("Go live: create session", error.message);
-      else pass("Go live: create session (direct)");
-    } else {
-      pass("Go live: API");
-    }
-  }
+// 8. Go live via direct live_sessions insert
+if (requestId && streamerId) {
+  const { data, error } = await streamerClient
+    .from("live_sessions")
+    .insert({
+      request_id: requestId,
+      streamer_id: streamerId,
+      stream_url: "https://twitch.tv/teststream",
+      platform: "twitch",
+    })
+    .select()
+    .single();
+  if (error) fail("Go live: create session", error.message);
+  else pass("Go live: create session (direct)");
 }
 
-// 10. Verify fulfilled status
+// 9. Verify live_now status
 if (requestId) {
   await new Promise((r) => setTimeout(r, 500));
   const { data, error } = await supabase
@@ -214,12 +177,12 @@ if (requestId) {
     .select("status")
     .eq("id", requestId)
     .single();
-  if (error) fail("Requests: fulfilled status", error.message);
-  else if (data.status !== "fulfilled") fail("Requests: fulfilled status", `expected fulfilled, got ${data.status}`);
-  else pass("Requests: fulfilled status");
+  if (error) fail("Requests: live_now status", error.message);
+  else if (data.status !== "live_now") fail("Requests: live_now status", `expected live_now, got ${data.status}`);
+  else pass("Requests: live_now status");
 }
 
-// 11. App routes reachable
+// 10. App routes reachable
 for (const route of ["/", "/requests", "/auth/login", "/streamers/dashboard"]) {
   try {
     const res = await fetch(`${APP_URL}${route}`, { redirect: "manual" });

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendGoLiveNotification } from "@/lib/notifications";
-import { unwrapRelation } from "@/lib/utils";
 import type { StreamPlatform } from "@/types/database";
 
 export async function POST(request: Request) {
@@ -14,31 +13,72 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { claimId, streamUrl, platform } = (await request.json()) as {
-    claimId: string;
+  const body = (await request.json()) as {
+    requestId?: string;
+    claimId?: string;
     streamUrl: string;
     platform: StreamPlatform;
   };
 
-  if (!claimId || !streamUrl?.trim()) {
-    return NextResponse.json({ error: "claimId and streamUrl required" }, { status: 400 });
+  const { streamUrl, platform } = body;
+  let requestId = body.requestId;
+
+  // Bridge: accept legacy claimId during migration
+  if (!requestId && body.claimId) {
+    const { data: claim } = await supabase
+      .from("claims")
+      .select("request_id")
+      .eq("id", body.claimId)
+      .eq("streamer_id", user.id)
+      .maybeSingle();
+    requestId = claim?.request_id;
   }
 
-  const { data: claim } = await supabase
-    .from("claims")
-    .select("*, requests(id, title, author_id)")
-    .eq("id", claimId)
-    .eq("streamer_id", user.id)
+  if (!requestId || !streamUrl?.trim()) {
+    return NextResponse.json({ error: "requestId and streamUrl required" }, { status: 400 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
     .single();
 
-  if (!claim) {
-    return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+  if (!profile || (profile.role !== "streamer" && profile.role !== "both")) {
+    return NextResponse.json({ error: "Streamer role required" }, { status: 403 });
+  }
+
+  const { data: requestData } = await supabase
+    .from("requests")
+    .select("id, title, author_id, status")
+    .eq("id", requestId)
+    .single();
+
+  if (!requestData) {
+    return NextResponse.json({ error: "Request not found" }, { status: 404 });
+  }
+
+  if (requestData.status === "completed") {
+    return NextResponse.json({ error: "Request is completed" }, { status: 400 });
+  }
+
+  const { data: existingSession } = await supabase
+    .from("live_sessions")
+    .select("id")
+    .eq("request_id", requestId)
+    .eq("streamer_id", user.id)
+    .is("ended_at", null)
+    .maybeSingle();
+
+  if (existingSession) {
+    return NextResponse.json({ error: "You already have an active session on this request" }, { status: 400 });
   }
 
   const { data: liveSession, error: sessionError } = await supabase
     .from("live_sessions")
     .insert({
-      claim_id: claimId,
+      request_id: requestId,
+      streamer_id: user.id,
       stream_url: streamUrl.trim(),
       platform: platform ?? "other",
     })
@@ -49,15 +89,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: sessionError.message }, { status: 400 });
   }
 
-  const requestData = unwrapRelation(claim.requests);
-  if (!requestData) {
-    return NextResponse.json({ error: "Request not found" }, { status: 404 });
-  }
-
   const { data: upvotes } = await supabase
     .from("upvotes")
     .select("user_id")
-    .eq("request_id", claim.request_id);
+    .eq("request_id", requestId);
 
   const recipientIds = new Set<string>([requestData.author_id]);
   upvotes?.forEach((u) => recipientIds.add(u.user_id));
