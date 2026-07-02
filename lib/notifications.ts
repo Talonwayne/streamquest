@@ -32,6 +32,9 @@ const platformLabels: Record<StreamPlatform, string> = {
   twitch: "Twitch",
   youtube: "YouTube",
   kick: "Kick",
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  facebook: "Facebook",
   other: "Stream",
 };
 

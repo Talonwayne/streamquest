@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "node scripts/apply-migration.mjs",
-    "test:features": "node scripts/test-features.mjs"
+    "test:features": "node scripts/test-features.mjs",
+    "test:stream-links": "npx tsx scripts/test-stream-links.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendGoLiveNotification } from "@/lib/notifications";
-import type { StreamPlatform } from "@/types/database";
+import { validateStreamUrl } from "@/lib/stream-links";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -17,13 +17,12 @@ export async function POST(request: Request) {
     requestId?: string;
     claimId?: string;
     streamUrl: string;
-    platform: StreamPlatform;
+    platform?: string;
   };
 
-  const { streamUrl, platform } = body;
+  const { streamUrl } = body;
   let requestId = body.requestId;
 
-  // Bridge: accept legacy claimId during migration
   if (!requestId && body.claimId) {
     const { data: claim } = await supabase
       .from("claims")
@@ -35,18 +34,19 @@ export async function POST(request: Request) {
   }
 
   if (!requestId || !streamUrl?.trim()) {
-    return NextResponse.json({ error: "requestId and streamUrl required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "requestId and streamUrl required" },
+      { status: 400 }
+    );
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || (profile.role !== "streamer" && profile.role !== "both")) {
-    return NextResponse.json({ error: "Streamer role required" }, { status: 403 });
+  const validation = validateStreamUrl(streamUrl);
+  if (!validation.valid) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
+
+  const normalizedUrl = validation.normalizedUrl!;
+  const platform = validation.platform;
 
   const { data: requestData } = await supabase
     .from("requests")
@@ -71,7 +71,10 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (existingSession) {
-    return NextResponse.json({ error: "You already have an active session on this request" }, { status: 400 });
+    return NextResponse.json(
+      { error: "You already have an active stream link on this request" },
+      { status: 400 }
+    );
   }
 
   const { data: liveSession, error: sessionError } = await supabase
@@ -79,8 +82,8 @@ export async function POST(request: Request) {
     .insert({
       request_id: requestId,
       streamer_id: user.id,
-      stream_url: streamUrl.trim(),
-      platform: platform ?? "other",
+      stream_url: normalizedUrl,
+      platform,
     })
     .select()
     .single();
@@ -98,13 +101,13 @@ export async function POST(request: Request) {
   upvotes?.forEach((u) => recipientIds.add(u.user_id));
   recipientIds.delete(user.id);
 
-  const { data: streamerProfile } = await supabase
+  const { data: posterProfile } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("id", user.id)
     .single();
 
-  const streamerName = streamerProfile?.display_name ?? "A streamer";
+  const posterName = posterProfile?.display_name ?? "A streamer";
   let notificationsSent = 0;
 
   try {
@@ -126,10 +129,10 @@ export async function POST(request: Request) {
       const emailResult = await sendGoLiveNotification({
         userId: recipientId,
         email,
-        streamerName,
+        streamerName: posterName,
         requestTitle: requestData.title,
-        streamUrl: streamUrl.trim(),
-        platform: platform ?? "other",
+        streamUrl: normalizedUrl,
+        platform,
         pushSubscription: pushSub,
       });
 

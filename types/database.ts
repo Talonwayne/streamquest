@@ -20,7 +20,14 @@ export type RequestCategory =
   | "creative"
   | "other";
 
-export type StreamPlatform = "twitch" | "youtube" | "kick" | "other";
+export type StreamPlatform =
+  | "twitch"
+  | "youtube"
+  | "kick"
+  | "tiktok"
+  | "instagram"
+  | "facebook"
+  | "other";
 
 export type NotificationChannel = "email" | "push";
 
