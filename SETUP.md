@@ -50,13 +50,48 @@ npm run db:migrate
 
 Alternative path: **Database → Migrations → Connect GitHub**
 
-## 5. Verify
+## 5. Seed test data (local / staging only)
+
+Populate test users, requests, upvotes, and live sessions:
+
+```bash
+# Remote Supabase project — requires explicit confirmation
+npm run seed -- --confirm
+
+# Re-apply after changes
+npm run seed -- --confirm --force
+```
+
+Local Supabase CLI (runs `supabase/seed.sql` on `supabase db reset`):
+
+```bash
+supabase db reset
+```
+
+**Test accounts** (dev/staging only — never use in production):
+
+| Email | Role | Password |
+|-------|------|----------|
+| `streamer1@streamquest.test` | Streamer (PixelPatriot) | `StreamquestDev123!` |
+| `streamer2@streamquest.test` | Streamer (GameGlitchQueen) | same |
+| `streamer3@streamquest.test` | Streamer + viewer (KickCommentaryKing) | same |
+| `streamer4@streamquest.test` | Streamer (IRLExplorer) | same |
+| `streamer5@streamquest.test` | Streamer (TechTalkTess) | same |
+| `viewer1@streamquest.test` | Viewer (CuriousCat) | same |
+| `viewer2@streamquest.test` | Viewer (HypeViewer) | same |
+| `viewer3@streamquest.test` | Viewer (QuietLurker) | same |
+
+Override the password with `SEED_TEST_PASSWORD` in `.env.local`. The seed script refuses to run against production (`NODE_ENV=production`) or remote projects without `--confirm`.
+
+Sample seeded content: 20 requests across categories (investigative journalism, game challenge, commentary, gaming, IRL, etc.), varied upvotes, 2 live-now sessions with allowlisted Twitch/YouTube URLs, and 2 completed sessions.
+
+## 6. Verify
 
 ```bash
 npm run dev
 npm run test:features
 ```
 
-## 6. Deploy to production
+## 7. Deploy to production
 
 See **[DEPLOY.md](./DEPLOY.md)** for the full Vercel + Supabase production guide (env vars, auth redirect URLs, migrations, optional Resend/VAPID).

@@ -47,7 +47,15 @@ Generate VAPID keys:
 npx web-push generate-vapid-keys
 ```
 
-### 3. Run dev server
+### 3. Seed test data (optional)
+
+```bash
+npm run seed -- --confirm
+```
+
+See [SETUP.md](./SETUP.md#5-seed-test-data-local--staging-only) for test account credentials (`streamer1@streamquest.test` / `StreamquestDev123!`, etc.).
+
+### 4. Run dev server
 
 ```bash
 npm run dev
