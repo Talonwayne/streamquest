@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryBadge } from "@/components/category-badge";
+import { RequestTags } from "@/components/request-tags";
 import { UpvoteButton } from "@/components/upvote-button";
 import { formatRelativeTime, formatRequestStatus } from "@/lib/utils";
 import type { RequestWithAuthor } from "@/types/database";
@@ -31,6 +33,10 @@ export function RequestCard({ request, userUpvoted = false }: RequestCardProps) 
               by {request.profiles?.display_name ?? "Anonymous"} ·{" "}
               {formatRelativeTime(request.created_at)}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <CategoryBadge category={request.category} />
+              <RequestTags tags={request.tags ?? []} linkToBrowse />
+            </div>
           </div>
           <Badge variant={statusVariant[request.status]}>
             {formatRequestStatus(request.status)}

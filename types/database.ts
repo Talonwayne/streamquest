@@ -2,6 +2,24 @@ export type UserRole = "viewer" | "streamer" | "both";
 
 export type RequestStatus = "open" | "live_now" | "completed";
 
+export type RequestCategory =
+  | "investigative_journalism"
+  | "game_challenge"
+  | "commentary"
+  | "gaming"
+  | "irl"
+  | "sports"
+  | "learning"
+  | "travel"
+  | "food"
+  | "music"
+  | "challenges"
+  | "events"
+  | "tech"
+  | "fitness"
+  | "creative"
+  | "other";
+
 export type StreamPlatform = "twitch" | "youtube" | "kick" | "other";
 
 export type NotificationChannel = "email" | "push";
@@ -34,12 +52,21 @@ export interface Request {
   author_id: string;
   title: string;
   description: string;
+  category: RequestCategory;
+  tags: string[];
   status: RequestStatus;
   upvote_count: number;
   trending_score?: number;
   active_streamer_count?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface SimilarRequest {
+  id: string;
+  title: string;
+  tags: string[];
+  match_reason: "same_tags" | "similar_title" | "same_title";
 }
 
 export interface Upvote {

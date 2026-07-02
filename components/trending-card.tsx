@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryBadge } from "@/components/category-badge";
+import { RequestTags } from "@/components/request-tags";
 import { formatRelativeTime, formatRequestStatus, formatTrendingScore } from "@/lib/utils";
 import { Eye, Radio, TrendingUp } from "lucide-react";
 import type { TrendingRequest } from "@/types/database";
@@ -41,6 +43,10 @@ export function TrendingCard({ request, rank }: TrendingCardProps) {
               by {request.profiles?.display_name ?? "Anonymous"} ·{" "}
               {formatRelativeTime(request.created_at)}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <CategoryBadge category={request.category} />
+              <RequestTags tags={request.tags ?? []} linkToBrowse />
+            </div>
           </div>
         </div>
       </CardHeader>

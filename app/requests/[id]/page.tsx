@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CategoryBadge } from "@/components/category-badge";
+import { RequestTags } from "@/components/request-tags";
 import { UpvoteButton } from "@/components/upvote-button";
 import { GoLiveForm } from "@/components/go-live-form";
 import { formatRelativeTime, formatRequestStatus } from "@/lib/utils";
@@ -97,10 +99,11 @@ export default async function RequestDetailPage({
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="mb-2 flex items-center gap-2">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant[request.status as RequestStatus]}>
                 {formatRequestStatus(request.status as RequestStatus)}
               </Badge>
+              <CategoryBadge category={request.category} />
               <span className="text-sm text-zinc-500">
                 {formatRelativeTime(request.created_at)}
               </span>
@@ -109,6 +112,7 @@ export default async function RequestDetailPage({
             <p className="mt-1 text-sm text-zinc-500">
               by {request.profiles?.display_name ?? "Anonymous"}
             </p>
+            <RequestTags tags={request.tags ?? []} linkToBrowse className="mt-2" />
           </div>
           <UpvoteButton
             key={`${request.id}-${request.upvote_count}-${userUpvoted}`}

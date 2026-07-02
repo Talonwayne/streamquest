@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isValidCategory, normalizeTags } from "@/lib/categories";
 
 export async function GET() {
   const supabase = await createClient();
@@ -25,11 +26,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { title, description } = await request.json();
+  const body = await request.json();
+  const { title, description, category, tags: rawTags } = body;
 
   if (!title?.trim() || !description?.trim()) {
     return NextResponse.json({ error: "Title and description required" }, { status: 400 });
   }
+
+  if (!isValidCategory(category)) {
+    return NextResponse.json({ error: "Valid category required" }, { status: 400 });
+  }
+
+  const tags = normalizeTags(rawTags ?? []);
 
   const { data, error } = await supabase
     .from("requests")
@@ -37,6 +45,8 @@ export async function POST(request: Request) {
       author_id: user.id,
       title: title.trim(),
       description: description.trim(),
+      category,
+      tags,
     })
     .select()
     .single();
