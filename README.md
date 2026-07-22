@@ -86,15 +86,19 @@ Optional: Resend (email) and VAPID keys (push) — see DEPLOY.md.
 ```
 app/
   requests/          # Request feed, detail, create
+  map/               # World map of live + profile locations
   streamers/         # Dashboard, public profiles
   auth/              # Login, callback, signout
   api/               # REST endpoints
 components/          # UI and feature components
-lib/                 # Supabase clients, auth, notifications
+lib/                 # Supabase clients, auth, notifications, location
 supabase/migrations/ # Database schema + RLS
 types/               # TypeScript types
 ```
 
+## Map
+
+`/map` shows active live sessions (and optional streamer home bases) with Leaflet + OpenStreetMap/Carto tiles. Streamers set a default location on **Profile**, and can check **Share my location on the map** when going live.
 ## PR roadmap (implemented)
 
 1. Foundation — Next.js + Supabase scaffold

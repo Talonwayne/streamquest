@@ -109,8 +109,13 @@ If you already linked Supabase to GitHub (see [SETUP.md](./SETUP.md) §4), migra
 npm run db:migrate
 ```
 
-**Manual fallback** (SQL Editor): run `supabase/migrations/001_initial_schema.sql`.
+**Manual fallback** (SQL Editor): run migrations in order under `supabase/migrations/` (through `006_location_fields.sql` for the live map).
 
+### Live map
+
+- Page: `/map` (Leaflet + Carto dark tiles; no Google Maps API key required)
+- Markers come from `live_sessions` / `streamer_profiles` location columns (migration `006_location_fields.sql`)
+- Optional geocoding via `/api/geocode` (OpenStreetMap Nominatim proxy)
 ---
 
 ## 6. Deploy and smoke test
@@ -121,8 +126,8 @@ npm run db:migrate
    - Sign up / sign in
    - Post a request
    - Upvote (logged in)
-   - Streamer: claim request → go live (if you have a streamer profile)
-
+   - Streamer: go live with a stream link (if you have a streamer profile)
+   - Map: `/map` loads (empty state OK until locations are shared)
 ---
 
 ## Troubleshooting

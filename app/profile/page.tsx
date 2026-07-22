@@ -40,6 +40,9 @@ export default async function ProfilePage({
         initialRole={(profile?.role as UserRole) ?? "viewer"}
         initialBio={streamerProfile?.bio ?? ""}
         initialPlatformLinks={platformLinks}
+        initialLatitude={streamerProfile?.latitude ?? null}
+        initialLongitude={streamerProfile?.longitude ?? null}
+        initialLocationLabel={streamerProfile?.location_label ?? null}
       />
     </div>
   );

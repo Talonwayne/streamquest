@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendGoLiveNotification } from "@/lib/notifications";
 import { validateStreamUrl } from "@/lib/stream-links";
+import { parseLocationInput } from "@/lib/location";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -18,6 +19,10 @@ export async function POST(request: Request) {
     claimId?: string;
     streamUrl: string;
     platform?: string;
+    shareLocation?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
+    locationLabel?: string | null;
   };
 
   const { streamUrl } = body;
@@ -77,14 +82,58 @@ export async function POST(request: Request) {
     );
   }
 
+  const insertPayload: Record<string, unknown> = {
+    request_id: requestId,
+    streamer_id: user.id,
+    stream_url: normalizedUrl,
+    platform,
+  };
+
+  if (body.shareLocation) {
+    let locationResult = parseLocationInput({
+      latitude: body.latitude,
+      longitude: body.longitude,
+      locationLabel: body.locationLabel,
+    });
+
+    if (!locationResult.ok) {
+      return NextResponse.json({ error: locationResult.error }, { status: 400 });
+    }
+
+    // Fall back to profile default location when checkbox is on but no coords sent
+    if (!locationResult.location) {
+      const { data: streamerProfile } = await supabase
+        .from("streamer_profiles")
+        .select("latitude, longitude, location_label")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (
+        streamerProfile?.latitude != null &&
+        streamerProfile?.longitude != null
+      ) {
+        locationResult = {
+          ok: true,
+          clear: false,
+          location: {
+            latitude: streamerProfile.latitude,
+            longitude: streamerProfile.longitude,
+            location_label: streamerProfile.location_label,
+          },
+        };
+      }
+    }
+
+    if (locationResult.location?.latitude != null) {
+      insertPayload.latitude = locationResult.location.latitude;
+      insertPayload.longitude = locationResult.location.longitude;
+      insertPayload.location_label = locationResult.location.location_label;
+    }
+  }
+
   const { data: liveSession, error: sessionError } = await supabase
     .from("live_sessions")
-    .insert({
-      request_id: requestId,
-      streamer_id: user.id,
-      stream_url: normalizedUrl,
-      platform,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import type { UserRole } from "@/types/database";
 
 interface ProfileFormProps {
@@ -25,6 +26,9 @@ interface ProfileFormProps {
     youtube?: string;
     kick?: string;
   };
+  initialLatitude?: number | null;
+  initialLongitude?: number | null;
+  initialLocationLabel?: string | null;
 }
 
 export function ProfileForm({
@@ -32,6 +36,9 @@ export function ProfileForm({
   initialRole,
   initialBio = "",
   initialPlatformLinks = {},
+  initialLatitude = null,
+  initialLongitude = null,
+  initialLocationLabel = null,
 }: ProfileFormProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(initialDisplayName);
@@ -40,6 +47,14 @@ export function ProfileForm({
   const [twitch, setTwitch] = useState(initialPlatformLinks.twitch ?? "");
   const [youtube, setYoutube] = useState(initialPlatformLinks.youtube ?? "");
   const [kick, setKick] = useState(initialPlatformLinks.kick ?? "");
+  const [location, setLocation] = useState<LocationValue>({
+    latitude: initialLatitude,
+    longitude: initialLongitude,
+    locationLabel: initialLocationLabel ?? "",
+  });
+  const [hadLocation] = useState(
+    initialLatitude != null && initialLongitude != null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -52,6 +67,12 @@ export function ProfileForm({
     setError(null);
     setSuccess(false);
 
+    const clearLocation =
+      isStreamer &&
+      hadLocation &&
+      location.latitude == null &&
+      location.longitude == null;
+
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -62,6 +83,14 @@ export function ProfileForm({
         platformLinks: isStreamer
           ? { twitch, youtube, kick }
           : undefined,
+        ...(isStreamer
+          ? {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              locationLabel: location.locationLabel || null,
+              clearLocation,
+            }
+          : {}),
       }),
     });
 
@@ -149,6 +178,8 @@ export function ProfileForm({
                   placeholder="https://kick.com/yourname"
                 />
               </div>
+
+              <LocationPicker value={location} onChange={setLocation} />
             </>
           )}
 

@@ -21,14 +21,29 @@ import {
 interface GoLiveFormProps {
   requestId: string;
   requestTitle: string;
+  defaultLatitude?: number | null;
+  defaultLongitude?: number | null;
+  defaultLocationLabel?: string | null;
 }
 
-export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
+export function GoLiveForm({
+  requestId,
+  requestTitle,
+  defaultLatitude = null,
+  defaultLongitude = null,
+  defaultLocationLabel = null,
+}: GoLiveFormProps) {
   const router = useRouter();
   const [streamUrl, setStreamUrl] = useState("");
+  const [shareLocation, setShareLocation] = useState(
+    defaultLatitude != null && defaultLongitude != null
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const hasDefaultLocation =
+    defaultLatitude != null && defaultLongitude != null;
 
   const preview = useMemo(() => {
     if (!streamUrl.trim()) return null;
@@ -38,6 +53,41 @@ export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
   const detectedPlatform = preview?.valid
     ? preview.platform
     : detectPlatform(streamUrl);
+
+  async function resolveLocation(): Promise<{
+    latitude?: number;
+    longitude?: number;
+    locationLabel?: string | null;
+  }> {
+    if (!shareLocation) return {};
+
+    if (hasDefaultLocation) {
+      return {
+        latitude: defaultLatitude!,
+        longitude: defaultLongitude!,
+        locationLabel: defaultLocationLabel,
+      };
+    }
+
+    if (!navigator.geolocation) {
+      throw new Error(
+        "No saved location and geolocation is unavailable. Set a location on your profile first."
+      );
+    }
+
+    const coords = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false,
+        timeout: 12000,
+      });
+    });
+
+    return {
+      latitude: coords.coords.latitude,
+      longitude: coords.coords.longitude,
+      locationLabel: defaultLocationLabel,
+    };
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +101,26 @@ export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
       return;
     }
 
+    let locationFields: {
+      latitude?: number;
+      longitude?: number;
+      locationLabel?: string | null;
+    } = {};
+
+    if (shareLocation) {
+      try {
+        locationFields = await resolveLocation();
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not get location. Set one on your profile or uncheck sharing."
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
     const res = await fetch("/api/go-live", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,6 +128,8 @@ export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
         requestId,
         streamUrl: validation.normalizedUrl ?? streamUrl.trim(),
         platform: validation.platform,
+        shareLocation,
+        ...locationFields,
       }),
     });
 
@@ -133,6 +205,32 @@ export function GoLiveForm({ requestId, requestTitle }: GoLiveFormProps) {
               </p>
             )}
           </div>
+
+          <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={shareLocation}
+                onChange={(e) => setShareLocation(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-violet-500 focus:ring-violet-500"
+              />
+              <span>
+                <span className="block text-sm font-medium text-zinc-200">
+                  Share my location on the map
+                </span>
+                <span className="mt-0.5 block text-xs text-zinc-500">
+                  Location is public when shared. Uses your profile location
+                  {hasDefaultLocation && defaultLocationLabel
+                    ? ` (${defaultLocationLabel})`
+                    : ""}
+                  {hasDefaultLocation
+                    ? "."
+                    : ", or asks the browser for your current position."}
+                </span>
+              </span>
+            </label>
+          </div>
+
           {error && <p className="text-sm text-red-400">{error}</p>}
           <Button
             type="submit"

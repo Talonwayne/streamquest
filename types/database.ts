@@ -50,6 +50,10 @@ export interface StreamerProfile {
     youtube?: string;
     kick?: string;
   };
+  latitude: number | null;
+  longitude: number | null;
+  location_label: string | null;
+  location_updated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,8 +100,27 @@ export interface LiveSession {
   streamer_id: string;
   stream_url: string;
   platform: StreamPlatform;
+  latitude: number | null;
+  longitude: number | null;
+  location_label: string | null;
   started_at: string;
   ended_at: string | null;
+}
+
+export type MapMarkerKind = "live" | "profile";
+
+export interface MapMarker {
+  id: string;
+  kind: MapMarkerKind;
+  latitude: number;
+  longitude: number;
+  location_label: string | null;
+  streamer_id: string;
+  display_name: string | null;
+  request_id?: string;
+  request_title?: string;
+  stream_url?: string;
+  platform?: StreamPlatform;
 }
 
 export interface Notification {

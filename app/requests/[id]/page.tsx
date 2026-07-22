@@ -74,10 +74,25 @@ export default async function RequestDetailPage({
     : null;
 
   let canPostStreamLink = false;
+  let defaultLatitude: number | null = null;
+  let defaultLongitude: number | null = null;
+  let defaultLocationLabel: string | null = null;
+
   if (user) {
     canPostStreamLink =
       (request.status === "open" || request.status === "live_now") &&
       !userActiveSession;
+
+    if (canPostStreamLink) {
+      const { data: streamerProfile } = await supabase
+        .from("streamer_profiles")
+        .select("latitude, longitude, location_label")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      defaultLatitude = streamerProfile?.latitude ?? null;
+      defaultLongitude = streamerProfile?.longitude ?? null;
+      defaultLocationLabel = streamerProfile?.location_label ?? null;
+    }
   }
 
   return (
@@ -124,7 +139,13 @@ export default async function RequestDetailPage({
             <p className="mb-4 text-sm text-zinc-400">
               Post your stream link. All upvoters get notified — multiple people can fulfill the same request.
             </p>
-            <GoLiveForm requestId={request.id} requestTitle={request.title} />
+            <GoLiveForm
+              requestId={request.id}
+              requestTitle={request.title}
+              defaultLatitude={defaultLatitude}
+              defaultLongitude={defaultLongitude}
+              defaultLocationLabel={defaultLocationLabel}
+            />
           </div>
         )}
 
