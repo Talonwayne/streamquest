@@ -32,6 +32,8 @@ export function LocationPicker({
   const lastGeocodeRef = useRef(0);
 
   useEffect(() => {
+    // Keep the search field in sync when parent location changes (profile load / clear).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled sync from props
     setSearchQuery(value.locationLabel);
   }, [value.locationLabel]);
 

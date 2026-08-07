@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EndStreamButton } from "@/components/end-stream-button";
 import { formatRelativeTime } from "@/lib/utils";
 import { STREAM_PLATFORM_LABELS } from "@/lib/stream-links";
 import type { LiveSessionWithStreamer } from "@/types/database";
@@ -31,9 +32,14 @@ function PlatformBadge({ platform }: { platform: string }) {
 interface StreamLinksListProps {
   sessions: LiveSessionWithStreamer[];
   variant?: "active" | "past";
+  currentUserId?: string | null;
 }
 
-export function StreamLinksList({ sessions, variant = "active" }: StreamLinksListProps) {
+export function StreamLinksList({
+  sessions,
+  variant = "active",
+  currentUserId = null,
+}: StreamLinksListProps) {
   if (sessions.length === 0) return null;
 
   const isActive = variant === "active";
@@ -51,6 +57,11 @@ export function StreamLinksList({ sessions, variant = "active" }: StreamLinksLis
         >
           <div className="flex flex-wrap items-center gap-2">
             <PlatformBadge platform={session.platform} />
+            {session.live_verified && isActive && (
+              <span className="rounded-md border border-emerald-700/50 bg-emerald-900/40 px-2 py-0.5 text-xs text-emerald-200">
+                Verified
+              </span>
+            )}
             <Link
               href={`/streamers/${session.streamer_id}`}
               className="text-sm font-medium text-violet-400 hover:underline"
@@ -60,7 +71,15 @@ export function StreamLinksList({ sessions, variant = "active" }: StreamLinksLis
             <span className="text-xs text-zinc-500">
               {formatRelativeTime(session.started_at)}
             </span>
+            {session.platform_viewer_count != null && isActive && (
+              <span className="text-xs text-zinc-500">
+                {session.platform_viewer_count} viewers
+              </span>
+            )}
           </div>
+          {session.platform_title && (
+            <p className="mt-2 text-sm text-zinc-300">{session.platform_title}</p>
+          )}
           <a
             href={session.stream_url}
             target="_blank"
@@ -69,17 +88,22 @@ export function StreamLinksList({ sessions, variant = "active" }: StreamLinksLis
           >
             {session.stream_url}
           </a>
-          <a
-            href={session.stream_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex"
-          >
-            <Button size="sm" className="gap-2" variant={isActive ? "default" : "outline"}>
-              {isActive ? "Watch stream" : "Open link"}
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          </a>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <a
+              href={session.stream_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex"
+            >
+              <Button size="sm" className="gap-2" variant={isActive ? "default" : "outline"}>
+                {isActive ? "Watch stream" : "Open link"}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            </a>
+            {isActive && currentUserId === session.streamer_id && (
+              <EndStreamButton sessionId={session.id} />
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -1,13 +1,17 @@
 # Streamquest
 
-Request-driven stream discovery. Viewers post and upvote stream ideas; streamers claim requests and go live; everyone who cared gets notified with a link to Twitch, YouTube, Kick, or wherever.
+Request-driven stream discovery. Viewers post and upvote stream ideas; anyone can fulfill by posting an allowlisted live URL; everyone who cared gets notified. Launch niches: **investigative journalism** and **travel**.
+
+**Live:** https://streamquest-green.vercel.app
 
 ## Stack
 
 - **Next.js 16** (App Router)
 - **Supabase** (Postgres, Auth, RLS)
-- **Resend** (transactional email)
+- **Resend** (transactional email + weekly digest)
 - **Web Push** (browser notifications)
+- **Twitch Helix / EventSub** + **YouTube Data API** (optional live verification)
+- **Leaflet + Nominatim** (map + geocoding)
 
 ## Local development
 
@@ -20,93 +24,45 @@ npm install
 ### 2. Supabase setup
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Run the migration in `supabase/migrations/001_initial_schema.sql` via the SQL Editor
-3. Copy `.env.example` to `.env.local` and fill in your keys:
+2. Run migrations in `supabase/migrations/` (or `npm run db:migrate` with `DATABASE_URL`)
+3. Copy `.env.example` to `.env.local` and fill in keys
 
-```bash
-cp .env.example .env.local
-```
-
-Required variables:
+Required:
 
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (for notification fan-out) |
-| `RESEND_API_KEY` | Optional — email notifications |
-| `RESEND_FROM_EMAIL` | Sender address for Resend |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Optional — web push |
-| `VAPID_PRIVATE_KEY` | Web push private key |
-| `VAPID_SUBJECT` | e.g. `mailto:you@example.com` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (notifications, cron) |
 | `NEXT_PUBLIC_APP_URL` | e.g. `http://localhost:3000` |
 
-Generate VAPID keys:
+Optional: Resend, VAPID, Twitch, YouTube, `CRON_SECRET`, `DIGEST_TO_EMAIL` — see `.env.example`.
 
-```bash
-npx web-push generate-vapid-keys
-```
-
-### 3. Seed test data (optional)
+### 3. Seed test data
 
 ```bash
 npm run seed -- --confirm
 ```
 
-See [SETUP.md](./SETUP.md#5-seed-test-data-local--staging-only) for test account credentials (`streamer1@streamquest.test` / `StreamquestDev123!`, etc.).
+See [SETUP.md](./SETUP.md) for test accounts.
 
-### 4. Run dev server
+### 4. Run
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
 ## Core flows
 
-1. **Viewer** — Sign up → post a request → upvote others → get email/push when someone goes live
-2. **Streamer** — Set role to Streamer on profile → browse dashboard → claim request → paste stream URL → notify all upvoters
+1. **Viewer** — Sign up → post/upvote/follow/comment on a request → get notified on go-live
+2. **Fulfiller** — Paste Twitch/YouTube/Kick/… link on a request → optional map pin → end stream when done
+3. **Discovery** — `/requests` search, `/trending`, `/live`, `/map`, niche pages under `/explore/*`
 
-## Deploy (production)
+## Deploy
 
-**Basic prod (~15 min):** Vercel + your existing Supabase project. Full step-by-step guide: **[DEPLOY.md](./DEPLOY.md)**.
+See [DEPLOY.md](./DEPLOY.md). Apply migration `007_engagement_search_platforms.sql` in production.
 
-Quick outline:
-
-1. Push to [github.com/Talonwayne/streamquest](https://github.com/Talonwayne/streamquest)
-2. Import repo in [Vercel](https://vercel.com) and set env vars (`NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`)
-3. Add your Vercel URL to Supabase **Site URL** and **Redirect URLs** (`/auth/callback`)
-4. Migrations apply via linked Supabase ↔ GitHub (or `npm run db:migrate`)
-
-Optional: Resend (email) and VAPID keys (push) — see DEPLOY.md.
-
-## Project structure
-
-```
-app/
-  requests/          # Request feed, detail, create
-  map/               # World map of live + profile locations
-  streamers/         # Dashboard, public profiles
-  auth/              # Login, callback, signout
-  api/               # REST endpoints
-components/          # UI and feature components
-lib/                 # Supabase clients, auth, notifications, location
-supabase/migrations/ # Database schema + RLS
-types/               # TypeScript types
-```
-
-## Map
-
-`/map` shows active live sessions (and optional streamer home bases) with Leaflet + OpenStreetMap/Carto tiles. Streamers set a default location on **Profile**, and can check **Share my location on the map** when going live.
-## PR roadmap (implemented)
-
-1. Foundation — Next.js + Supabase scaffold
-2. Auth and profiles
-3. Request forum and upvotes
-4. Streamer dashboard and claims
-5. Go live and notifications
-6. Landing page and polish
+GTM / outreach checklist: [docs/GTM.md](./docs/GTM.md).
 
 ## License
 

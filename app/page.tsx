@@ -2,7 +2,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Bell, Radio, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Bell, MapPin, Radio, TrendingUp, Users } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -21,16 +21,30 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-400">
-            Post stream ideas. Upvote what sounds fun. Get notified when a streamer goes live
-            doing exactly that — on Twitch, YouTube, Kick, or anywhere.
+            Post stream ideas. Upvote what sounds fun. Get notified when someone goes live
+            doing exactly that — on Twitch, YouTube, Kick, or anywhere. Starting with
+            investigative journalism and travel.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/requests/new" className={cn(buttonVariants({ size: "lg" }), "gap-2")}>
               Request a stream
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/streamers/dashboard" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>
-              I&apos;m a streamer
+            <Link href="/live" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>
+              See who&apos;s live
+            </Link>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
+            <Link href="/explore/investigative-journalism" className="text-violet-400 hover:underline">
+              Investigative journalism
+            </Link>
+            <span className="text-zinc-600">·</span>
+            <Link href="/explore/travel" className="text-violet-400 hover:underline">
+              Travel
+            </Link>
+            <span className="text-zinc-600">·</span>
+            <Link href="/map" className="text-violet-400 hover:underline">
+              World map
             </Link>
           </div>
         </div>
@@ -49,8 +63,8 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-white">1. Request & upvote</h3>
                 <p className="mt-2 text-sm text-zinc-400">
-                  Viewers post ideas like &ldquo;blindfolded Mario 64&rdquo; or &ldquo;cooking with chat
-                  recipes.&rdquo; Upvote what you want to see.
+                  Viewers post ideas like &ldquo;investigate this local ordinance&rdquo; or
+                  &ldquo;live from Tokyo night markets.&rdquo; Upvote what you want to see.
                 </p>
               </CardContent>
             </Card>
@@ -59,10 +73,10 @@ export default function HomePage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-violet-600/20">
                   <Users className="h-5 w-5 text-violet-400" />
                 </div>
-                <h3 className="font-semibold text-white">2. Streamers claim</h3>
+                <h3 className="font-semibold text-white">2. Go live & fulfill</h3>
                 <p className="mt-2 text-sm text-zinc-400">
-                  Smaller streamers browse demand, claim requests they can fulfill, and get a
-                  built-in audience before going live.
+                  Anyone can post an allowlisted stream link. Multiple people can fulfill the
+                  same request — smaller streamers get a built-in audience before going live.
                 </p>
               </CardContent>
             </Card>
@@ -73,8 +87,8 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-white">3. Get notified</h3>
                 <p className="mt-2 text-sm text-zinc-400">
-                  When a streamer goes live with your request, everyone who upvoted gets a push
-                  or email with a link to watch.
+                  When someone goes live on your request, everyone who upvoted or followed gets
+                  a push or email with a link to watch.
                 </p>
               </CardContent>
             </Card>
@@ -84,6 +98,10 @@ export default function HomePage() {
 
       <section className="border-t border-zinc-800 px-4 py-20">
         <div className="mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 text-violet-300">
+            <MapPin className="h-4 w-4" />
+            <span className="text-sm font-medium">Demand on a map</span>
+          </div>
           <h2 className="text-2xl font-bold text-white md:text-3xl">
             Discovery by content, not clout
           </h2>
@@ -92,9 +110,20 @@ export default function HomePage() {
             fulfilling what viewers actually want to watch. Every fulfilled request is proof of
             demand — and a notification list of people ready to tune in.
           </p>
-          <Link href="/requests" className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "mt-8 inline-flex")}>
-            Browse open requests
-          </Link>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/requests"
+              className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "inline-flex")}
+            >
+              Browse open requests
+            </Link>
+            <Link
+              href="/streamers/dashboard"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }), "inline-flex")}
+            >
+              I&apos;m a streamer
+            </Link>
+          </div>
         </div>
       </section>
     </>

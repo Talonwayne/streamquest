@@ -33,6 +33,10 @@ export type NotificationChannel = "email" | "push";
 
 export type NotificationStatus = "pending" | "sent" | "failed";
 
+export type LocationPrecision = "city" | "precise";
+
+export type ReportStatus = "pending" | "reviewed" | "actioned" | "dismissed";
+
 export interface Profile {
   id: string;
   display_name: string | null;
@@ -54,6 +58,9 @@ export interface StreamerProfile {
   longitude: number | null;
   location_label: string | null;
   location_updated_at: string | null;
+  location_precision?: LocationPrecision;
+  twitch_user_id?: string | null;
+  youtube_channel_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +76,9 @@ export interface Request {
   upvote_count: number;
   trending_score?: number;
   active_streamer_count?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_label?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -103,11 +113,45 @@ export interface LiveSession {
   latitude: number | null;
   longitude: number | null;
   location_label: string | null;
+  platform_title?: string | null;
+  platform_game?: string | null;
+  platform_viewer_count?: number | null;
+  platform_thumbnail_url?: string | null;
+  live_verified?: boolean;
+  platform_user_id?: string | null;
   started_at: string;
   ended_at: string | null;
 }
 
-export type MapMarkerKind = "live" | "profile";
+export interface Comment {
+  id: string;
+  request_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+}
+
+export interface CommentWithAuthor extends Comment {
+  profiles: Pick<Profile, "display_name" | "avatar_url"> | null;
+}
+
+export interface RequestFollow {
+  request_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface Report {
+  id: string;
+  reporter_id: string;
+  request_id: string | null;
+  comment_id: string | null;
+  reason: string;
+  status: ReportStatus;
+  created_at: string;
+}
+
+export type MapMarkerKind = "live" | "profile" | "request";
 
 export interface MapMarker {
   id: string;
@@ -115,12 +159,13 @@ export interface MapMarker {
   latitude: number;
   longitude: number;
   location_label: string | null;
-  streamer_id: string;
+  streamer_id?: string;
   display_name: string | null;
   request_id?: string;
   request_title?: string;
   stream_url?: string;
   platform?: StreamPlatform;
+  category?: string;
 }
 
 export interface Notification {

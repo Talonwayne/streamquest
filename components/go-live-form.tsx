@@ -41,6 +41,7 @@ export function GoLiveForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const hasDefaultLocation =
     defaultLatitude != null && defaultLongitude != null;
@@ -133,14 +134,16 @@ export function GoLiveForm({
       }),
     });
 
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      const data = await res.json();
       setError(data.error ?? "Failed to post stream link");
       setLoading(false);
       return;
     }
 
     setSuccess(true);
+    setWarning(data.enrichmentWarning ?? null);
     setStreamUrl("");
     router.refresh();
     setLoading(false);
@@ -151,14 +154,18 @@ export function GoLiveForm({
       <Card className="border-emerald-800/50 bg-emerald-950/20">
         <CardContent className="pt-6">
           <p className="text-emerald-300">
-            Stream link posted! Everyone who requested or upvoted &ldquo;
+            Stream link posted! Everyone who requested, upvoted, or followed &ldquo;
             {requestTitle}&rdquo; has been notified.
           </p>
+          {warning && <p className="mt-2 text-sm text-amber-300">{warning}</p>}
           <Button
             type="button"
             variant="outline"
             className="mt-4"
-            onClick={() => setSuccess(false)}
+            onClick={() => {
+              setSuccess(false);
+              setWarning(null);
+            }}
           >
             Post another link
           </Button>

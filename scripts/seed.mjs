@@ -183,6 +183,13 @@ async function upsertRequests() {
     category: r.category,
     tags: r.tags,
     status: "open",
+    ...(r.latitude != null && r.longitude != null
+      ? {
+          latitude: r.latitude,
+          longitude: r.longitude,
+          location_label: r.locationLabel ?? null,
+        }
+      : {}),
   }));
 
   const { error } = await supabase.from("requests").upsert(rows, {

@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { CATEGORY_LABELS, REQUEST_CATEGORIES } from "@/lib/categories";
 import type { RequestCategory } from "@/types/database";
 import { LayoutGrid } from "lucide-react";
+
+const FEATURED: RequestCategory[] = ["investigative_journalism", "travel"];
 
 export default async function CategoriesPage() {
   const supabase = await createClient();
@@ -26,6 +30,7 @@ export default async function CategoriesPage() {
   }
 
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const rest = REQUEST_CATEGORIES.filter((c) => !FEATURED.includes(c));
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -36,12 +41,47 @@ export default async function CategoriesPage() {
         </div>
         <h1 className="text-3xl font-bold text-white">Categories</h1>
         <p className="mt-1 text-zinc-400">
-          Explore stream requests by category. {total} total requests across {REQUEST_CATEGORIES.length} categories.
+          Launch niches first — investigative journalism and travel — then everything else.{" "}
+          {total} total requests.
         </p>
       </div>
 
+      <section className="mb-10">
+        <h2 className="mb-4 text-lg font-semibold text-white">Featured niches</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {FEATURED.map((category) => (
+            <Card key={category} className="border-violet-800/40 bg-violet-950/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">{CATEGORY_LABELS[category]}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-violet-300">{counts[category]}</p>
+                <div className="mt-3 flex gap-2">
+                  <Link
+                    href={
+                      category === "investigative_journalism"
+                        ? "/explore/investigative-journalism"
+                        : "/explore/travel"
+                    }
+                    className={cn(buttonVariants({ size: "sm" }))}
+                  >
+                    Explore niche
+                  </Link>
+                  <Link
+                    href={`/requests?category=${category}`}
+                    className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                  >
+                    Browse
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {REQUEST_CATEGORIES.map((category) => (
+        {rest.map((category) => (
           <Link key={category} href={`/requests?category=${category}`}>
             <Card className="h-full transition-colors hover:border-violet-700/50 hover:bg-violet-950/10">
               <CardHeader className="pb-2">

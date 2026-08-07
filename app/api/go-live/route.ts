@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { sendGoLiveNotification } from "@/lib/notifications";
 import { validateStreamUrl } from "@/lib/stream-links";
 import { parseLocationInput } from "@/lib/location";
+import { enrichLiveSession } from "@/lib/platform-live";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -82,11 +83,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const enrichment = await enrichLiveSession(platform, normalizedUrl);
+
   const insertPayload: Record<string, unknown> = {
     request_id: requestId,
     streamer_id: user.id,
     stream_url: normalizedUrl,
     platform,
+    live_verified: enrichment.live_verified,
+    platform_title: enrichment.platform_title,
+    platform_game: enrichment.platform_game,
+    platform_viewer_count: enrichment.platform_viewer_count,
+    platform_thumbnail_url: enrichment.platform_thumbnail_url,
+    platform_user_id: enrichment.platform_user_id,
   };
 
   if (body.shareLocation) {
@@ -100,7 +109,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: locationResult.error }, { status: 400 });
     }
 
-    // Fall back to profile default location when checkbox is on but no coords sent
     if (!locationResult.location) {
       const { data: streamerProfile } = await supabase
         .from("streamer_profiles")
@@ -131,14 +139,53 @@ export async function POST(request: Request) {
     }
   }
 
-  const { data: liveSession, error: sessionError } = await supabase
+  let liveSession;
+  let sessionError;
+
+  ({ data: liveSession, error: sessionError } = await supabase
     .from("live_sessions")
     .insert(insertPayload)
     .select()
-    .single();
+    .single());
 
-  if (sessionError) {
-    return NextResponse.json({ error: sessionError.message }, { status: 400 });
+  // If migration 007 isn't applied yet, retry without enrichment columns
+  if (sessionError?.message?.includes("column") || sessionError?.code === "PGRST204") {
+    const {
+      live_verified: _v,
+      platform_title: _t,
+      platform_game: _g,
+      platform_viewer_count: _c,
+      platform_thumbnail_url: _th,
+      platform_user_id: _u,
+      ...basePayload
+    } = insertPayload;
+    ({ data: liveSession, error: sessionError } = await supabase
+      .from("live_sessions")
+      .insert(basePayload)
+      .select()
+      .single());
+  }
+
+  if (sessionError || !liveSession) {
+    return NextResponse.json(
+      { error: sessionError?.message ?? "Failed to create live session" },
+      { status: 400 }
+    );
+  }
+
+  if (enrichment.platform_user_id && (platform === "twitch" || platform === "youtube")) {
+    const patch =
+      platform === "twitch"
+        ? { twitch_user_id: enrichment.platform_user_id }
+        : { youtube_channel_id: enrichment.platform_user_id };
+    await supabase.from("streamer_profiles").upsert(
+      {
+        user_id: user.id,
+        ...patch,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
   }
 
   const { data: upvotes } = await supabase
@@ -146,8 +193,14 @@ export async function POST(request: Request) {
     .select("user_id")
     .eq("request_id", requestId);
 
+  const { data: followers } = await supabase
+    .from("request_follows")
+    .select("user_id")
+    .eq("request_id", requestId);
+
   const recipientIds = new Set<string>([requestData.author_id]);
   upvotes?.forEach((u) => recipientIds.add(u.user_id));
+  followers?.forEach((f) => recipientIds.add(f.user_id));
   recipientIds.delete(user.id);
 
   const { data: posterProfile } = await supabase
@@ -210,7 +263,12 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { ...liveSession, notificationsSent },
+    {
+      ...liveSession,
+      notificationsSent,
+      liveVerified: enrichment.live_verified,
+      enrichmentWarning: enrichment.warning ?? null,
+    },
     { status: 201 }
   );
 }

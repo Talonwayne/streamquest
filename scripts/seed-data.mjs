@@ -289,6 +289,81 @@ export const REQUESTS = [
     tags: ["art", "creative", "commission"],
     status: "open",
   },
+  {
+    id: "b0000000-0000-4000-8000-000000000021",
+    authorId: "a0000000-0000-4000-8000-000000000101",
+    title: "Live FOIA filing for police bodycam policy",
+    description:
+      "Screen-share drafting and submitting a public records request for bodycam retention policies. Explain exemptions and appeal paths.",
+    category: "investigative_journalism",
+    tags: ["foia", "police", "transparency"],
+    status: "open",
+    latitude: 38.9072,
+    longitude: -77.0369,
+    locationLabel: "Washington, DC, USA",
+  },
+  {
+    id: "b0000000-0000-4000-8000-000000000022",
+    authorId: "a0000000-0000-4000-8000-000000000102",
+    title: "Trace a local development subsidy package",
+    description:
+      "Pull city council packets and parcel maps to show who benefits from a new tax incentive deal.",
+    category: "investigative_journalism",
+    tags: ["housing", "subsidies", "local-government"],
+    status: "open",
+    latitude: 41.8781,
+    longitude: -87.6298,
+    locationLabel: "Chicago, IL, USA",
+  },
+  {
+    id: "b0000000-0000-4000-8000-000000000023",
+    authorId: "a0000000-0000-4000-8000-000000000103",
+    title: "Fact-check a viral housing claim with primary sources",
+    description:
+      "Compare social posts to census, assessor, and zoning data live. Chat suggests leads.",
+    category: "investigative_journalism",
+    tags: ["fact-check", "housing", "primary-sources"],
+    status: "open",
+  },
+  {
+    id: "b0000000-0000-4000-8000-000000000024",
+    authorId: "a0000000-0000-4000-8000-000000000101",
+    title: "Tokyo night market food crawl (live)",
+    description:
+      "Handheld tour of a night market — stalls, prices, and what first-timers should order.",
+    category: "travel",
+    tags: ["tokyo", "night-market", "street-food"],
+    status: "open",
+    latitude: 35.6895,
+    longitude: 139.6917,
+    locationLabel: "Tokyo, Japan",
+  },
+  {
+    id: "b0000000-0000-4000-8000-000000000025",
+    authorId: "a0000000-0000-4000-8000-000000000102",
+    title: "Lisbon neighborhood first-timer day",
+    description:
+      "Transit-first day: viewpoint, cheap lunch, one museum, sunset. Track every euro.",
+    category: "travel",
+    tags: ["lisbon", "budget", "neighborhood"],
+    status: "open",
+    latitude: 38.7223,
+    longitude: -9.1393,
+    locationLabel: "Lisbon, Portugal",
+  },
+  {
+    id: "b0000000-0000-4000-8000-000000000026",
+    authorId: "a0000000-0000-4000-8000-000000000103",
+    title: "Mexico City street food under $15",
+    description:
+      "Tacos, aguas, and market snacks — show how far a small budget goes in a day.",
+    category: "travel",
+    tags: ["mexico-city", "street-food", "budget"],
+    status: "open",
+    latitude: 19.4326,
+    longitude: -99.1332,
+    locationLabel: "Mexico City, Mexico",
+  },
 ];
 
 /** requestId -> array of userIds who upvoted */
@@ -382,6 +457,33 @@ export const UPVOTES = {
     "a0000000-0000-4000-8000-000000000102",
     "a0000000-0000-4000-8000-000000000103",
     "a0000000-0000-4000-8000-000000000004",
+  ],
+  "b0000000-0000-4000-8000-000000000021": [
+    "a0000000-0000-4000-8000-000000000102",
+    "a0000000-0000-4000-8000-000000000103",
+    "a0000000-0000-4000-8000-000000000001",
+  ],
+  "b0000000-0000-4000-8000-000000000022": [
+    "a0000000-0000-4000-8000-000000000101",
+    "a0000000-0000-4000-8000-000000000103",
+  ],
+  "b0000000-0000-4000-8000-000000000023": [
+    "a0000000-0000-4000-8000-000000000102",
+    "a0000000-0000-4000-8000-000000000001",
+  ],
+  "b0000000-0000-4000-8000-000000000024": [
+    "a0000000-0000-4000-8000-000000000101",
+    "a0000000-0000-4000-8000-000000000102",
+    "a0000000-0000-4000-8000-000000000004",
+  ],
+  "b0000000-0000-4000-8000-000000000025": [
+    "a0000000-0000-4000-8000-000000000103",
+    "a0000000-0000-4000-8000-000000000004",
+  ],
+  "b0000000-0000-4000-8000-000000000026": [
+    "a0000000-0000-4000-8000-000000000101",
+    "a0000000-0000-4000-8000-000000000102",
+    "a0000000-0000-4000-8000-000000000103",
   ],
 };
 

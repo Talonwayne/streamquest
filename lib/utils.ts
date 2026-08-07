@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatRelativeTime(date: string | Date): string {
   const then = new Date(date).getTime();
-  const now = typeof window !== "undefined" ? Date.now() : then;
+  const now = Date.now();
   const diffSec = Math.floor((now - then) / 1000);
 
   if (diffSec < 60) return "just now";

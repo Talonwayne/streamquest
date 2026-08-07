@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isValidCategory, normalizeTags } from "@/lib/categories";
+import { parseLocationInput } from "@/lib/location";
 
 export async function GET() {
   const supabase = await createClient();
@@ -27,7 +28,15 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { title, description, category, tags: rawTags } = body;
+  const {
+    title,
+    description,
+    category,
+    tags: rawTags,
+    latitude,
+    longitude,
+    locationLabel,
+  } = body;
 
   if (!title?.trim() || !description?.trim()) {
     return NextResponse.json({ error: "Title and description required" }, { status: 400 });
@@ -39,15 +48,33 @@ export async function POST(request: Request) {
 
   const tags = normalizeTags(rawTags ?? []);
 
+  const insertPayload: Record<string, unknown> = {
+    author_id: user.id,
+    title: title.trim(),
+    description: description.trim(),
+    category,
+    tags,
+  };
+
+  if (latitude != null && longitude != null) {
+    const loc = parseLocationInput({
+      latitude,
+      longitude,
+      locationLabel: locationLabel ?? null,
+    });
+    if (!loc.ok) {
+      return NextResponse.json({ error: loc.error }, { status: 400 });
+    }
+    if (loc.location) {
+      insertPayload.latitude = loc.location.latitude;
+      insertPayload.longitude = loc.location.longitude;
+      insertPayload.location_label = loc.location.location_label;
+    }
+  }
+
   const { data, error } = await supabase
     .from("requests")
-    .insert({
-      author_id: user.id,
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      tags,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { RequestCard } from "@/components/request-card";
 import { CategoryFilter } from "@/components/category-filter";
+import { RequestSearch } from "@/components/request-search";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { computeClientTrendingScore, cn } from "@/lib/utils";
@@ -12,11 +14,12 @@ import type { RequestWithAuthor } from "@/types/database";
 export default async function RequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; tag?: string }>;
+  searchParams: Promise<{ category?: string; tag?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const activeCategory = parseCategoryParam(params.category);
   const activeTag = params.tag?.trim().toLowerCase() ?? null;
+  const searchQuery = params.q?.trim() ?? "";
 
   const supabase = await createClient();
   const {
@@ -26,6 +29,7 @@ export default async function RequestsPage({
   let query = supabase
     .from("requests")
     .select("*, profiles!requests_author_id_fkey(display_name, avatar_url)")
+    .in("status", ["open", "live_now"])
     .order("created_at", { ascending: false });
 
   if (activeCategory) {
@@ -34,6 +38,12 @@ export default async function RequestsPage({
 
   if (activeTag) {
     query = query.contains("tags", [activeTag]);
+  }
+
+  if (searchQuery) {
+    query = query.or(
+      `title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`
+    );
   }
 
   const { data: requests } = await query;
@@ -55,11 +65,11 @@ export default async function RequestsPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Stream requests</h1>
           <p className="mt-1 text-zinc-400">
-            Upvote ideas you want to see. Get notified when a streamer goes live.
+            Upvote ideas you want to see. Get notified when someone goes live.
           </p>
           {activeTag && (
             <div className="mt-2 flex items-center gap-2">
@@ -70,12 +80,21 @@ export default async function RequestsPage({
               </Link>
             </div>
           )}
+          {searchQuery && (
+            <p className="mt-2 text-sm text-zinc-500">
+              Results for &ldquo;{searchQuery}&rdquo;
+            </p>
+          )}
         </div>
-        <Link href="/requests/new" className={cn(buttonVariants(), "gap-2")}>
+        <Link href="/requests/new" className={cn(buttonVariants(), "gap-2 shrink-0")}>
           <Plus className="h-4 w-4" />
           New request
         </Link>
       </div>
+
+      <Suspense fallback={null}>
+        <RequestSearch />
+      </Suspense>
 
       <div className="mb-6">
         <CategoryFilter activeCategory={activeCategory} />
@@ -84,7 +103,7 @@ export default async function RequestsPage({
       {sorted.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zinc-700 py-16 text-center">
           <p className="text-zinc-400">
-            {activeCategory || activeTag
+            {activeCategory || activeTag || searchQuery
               ? "No requests match these filters."
               : "No requests yet. Be the first to post one!"}
           </p>

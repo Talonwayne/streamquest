@@ -18,7 +18,8 @@ interface LiveMapProps {
 }
 
 function createMarkerIcon(kind: MapMarker["kind"]) {
-  const color = kind === "live" ? "#a78bfa" : "#71717a";
+  const color =
+    kind === "live" ? "#a78bfa" : kind === "request" ? "#38bdf8" : "#71717a";
   const pulse =
     kind === "live"
       ? `<span style="position:absolute;inset:-4px;border-radius:9999px;background:${color};opacity:0.35;animation:sq-pulse 1.6s ease-out infinite"></span>`
@@ -61,6 +62,13 @@ function FitBounds({ markers }: { markers: MapMarker[] }) {
 export function LiveMap({ markers }: LiveMapProps) {
   const liveIcon = useMemo(() => createMarkerIcon("live"), []);
   const profileIcon = useMemo(() => createMarkerIcon("profile"), []);
+  const requestIcon = useMemo(() => createMarkerIcon("request"), []);
+
+  function iconFor(kind: MapMarker["kind"]) {
+    if (kind === "live") return liveIcon;
+    if (kind === "request") return requestIcon;
+    return profileIcon;
+  }
 
   return (
     <div className="relative h-full w-full min-h-[60vh]">
@@ -114,12 +122,14 @@ export function LiveMap({ markers }: LiveMapProps) {
           <Marker
             key={marker.id}
             position={[marker.latitude, marker.longitude]}
-            icon={marker.kind === "live" ? liveIcon : profileIcon}
+            icon={iconFor(marker.kind)}
           >
             <Popup>
               <div className="space-y-1.5 text-sm">
                 <p className="font-semibold text-zinc-100">
-                  {marker.display_name ?? "Streamer"}
+                  {marker.kind === "request"
+                    ? marker.request_title ?? "Open request"
+                    : marker.display_name ?? "Streamer"}
                 </p>
                 {marker.kind === "live" && marker.request_title && (
                   <p className="text-zinc-300">{marker.request_title}</p>
@@ -132,6 +142,9 @@ export function LiveMap({ markers }: LiveMapProps) {
                 )}
                 {marker.kind === "profile" && (
                   <p className="text-xs text-zinc-400">Home base</p>
+                )}
+                {marker.kind === "request" && (
+                  <p className="text-xs text-zinc-400">Open request pin</p>
                 )}
                 {marker.location_label && (
                   <p className="text-xs text-zinc-500">{marker.location_label}</p>
@@ -155,12 +168,14 @@ export function LiveMap({ markers }: LiveMapProps) {
                       Request
                     </a>
                   )}
-                  <a
-                    href={`/streamers/${marker.streamer_id}`}
-                    className="text-violet-400 hover:text-violet-300 underline text-xs"
-                  >
-                    Profile
-                  </a>
+                  {marker.streamer_id && (
+                    <a
+                      href={`/streamers/${marker.streamer_id}`}
+                      className="text-violet-400 hover:text-violet-300 underline text-xs"
+                    >
+                      Profile
+                    </a>
+                  )}
                 </div>
               </div>
             </Popup>

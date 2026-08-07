@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { requireStreamer } from "@/lib/auth";
 import { RequestCard } from "@/components/request-card";
+import { EndStreamButton } from "@/components/end-stream-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatRelativeTime, formatRequestStatus, trendingScore, unwrapRelation } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  cn,
+  formatRelativeTime,
+  formatRequestStatus,
+  trendingScore,
+  unwrapRelation,
+} from "@/lib/utils";
 import type { RequestStatus, RequestWithAuthor } from "@/types/database";
 
 export default async function StreamerDashboardPage() {
@@ -48,10 +56,28 @@ export default async function StreamerDashboardPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Streamer dashboard</h1>
+        <h1 className="text-3xl font-bold text-white">For streamers</h1>
         <p className="mt-1 text-zinc-400">
-          Browse what viewers want to watch. Go live on requests and grow your audience.
+          Fulfill viewer demand — especially investigative journalism and travel — then notify
+          everyone waiting. Link Twitch/YouTube on your profile for live verification.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/explore/investigative-journalism"
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Journalism demand
+          </Link>
+          <Link
+            href="/explore/travel"
+            className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+          >
+            Travel demand
+          </Link>
+          <Link href="/live" className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}>
+            Who&apos;s live
+          </Link>
+        </div>
       </div>
 
       {activeSessions.length > 0 && (
@@ -78,10 +104,11 @@ export default async function StreamerDashboardPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-zinc-500">
-                      Live since {formatRelativeTime(session.started_at)} · {req?.upvote_count} upvotes
+                      Live since {formatRelativeTime(session.started_at)} · {req?.upvote_count}{" "}
+                      upvotes
                     </p>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex flex-wrap items-center gap-3">
                     <a
                       href={session.stream_url}
                       target="_blank"
@@ -90,6 +117,7 @@ export default async function StreamerDashboardPage() {
                     >
                       View live session →
                     </a>
+                    <EndStreamButton sessionId={session.id} />
                   </CardContent>
                 </Card>
               );

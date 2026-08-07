@@ -4,7 +4,38 @@ import { isValidCoordinates } from "@/lib/location";
 const NOMINATIM_UA =
   "Streamquest/1.0 (https://streamquest-green.vercel.app; contact@streamquest.app)";
 
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 30;
+const buckets = new Map<string, { count: number; resetAt: number }>();
+
+function clientKey(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "anonymous"
+  );
+}
+
+function rateLimit(key: string): boolean {
+  const now = Date.now();
+  const bucket = buckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    buckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (bucket.count >= RATE_MAX) return false;
+  bucket.count += 1;
+  return true;
+}
+
 export async function GET(request: Request) {
+  if (!rateLimit(clientKey(request))) {
+    return NextResponse.json(
+      { error: "Too many geocode requests. Try again shortly." },
+      { status: 429 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() ?? "";
   const lat = searchParams.get("lat");
